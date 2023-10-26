@@ -1,9 +1,9 @@
-import 'package:blur/blur.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:music/model/song_model.dart';
+import 'package:music/page/lyric/view.dart';
 import 'package:music/style/app_style.dart';
 import 'package:music/utils/utils.dart';
 import 'package:music/widget.dart';
@@ -12,12 +12,16 @@ import 'controller.dart';
 
 class SongItem extends StatefulWidget {
   final int index;
+  final SongModel model;
+  final List<SongModel> musicList;
   final Function(int) onTap;
   final Function(int) onDoubleTap;
 
   const SongItem(
       {super.key,
       required this.index,
+      required this.model,
+      required this.musicList,
       required this.onTap,
       required this.onDoubleTap});
 
@@ -30,52 +34,66 @@ class _SongItemState extends State<SongItem> {
 
   @override
   Widget build(BuildContext context) {
-    final model = homeController.musicList[
-        widget.index < homeController.musicList.length
-            ? widget.index
-            : widget.index - 1];
+    final model = widget.model;
 
     Widget indexWidget() {
       return Obx(() {
-        bool isPlaying = widget.index == homeController.playIndex.value;
+        bool isPlaying = model.id == homeController.playId.value;
 
         return Container(
             alignment: Alignment.center,
-            width: 40,
+            width: Platform.isWindows ? 40 : 25,
+            height: Platform.isWindows ? 17 : 15,
+            margin: EdgeInsets.only(
+                bottom: isPlaying
+                    ? Platform.isWindows
+                        ? 15
+                        : 10
+                    : 0),
             child: isPlaying
-                ? const Icon(Icons.play_arrow, color: Colors.white, size: 30)
+                ? Icon(Icons.play_arrow,
+                    color: Colors.white, size: Platform.isWindows ? 30 : 25)
                 : Text(widget.index.toString(),
-                    style:
-                        MyTheme.middleTextStyle.copyWith(color: Colors.grey)));
+                    style: MyTheme.middleTextStyle));
       });
     }
 
     final picWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(5),
-        child: CachedNetworkImage(
-            imageUrl: model.picUrl!,
-            width: 50,
-            placeholder: (context, url) {
-              return Image.network(
-                  'https://s2.music.126.net/style/web2/img/outchain/loading.gif');
-            },
-            errorWidget: (context, error, stackTrace) {
-              debugPrint('列表图片加载失败');
-              return const Icon(Icons.info, color: Colors.white);
-            }));
+        borderRadius: BorderRadius.circular(5), child: sb()
+        //  CachedNetworkImage(
+        //     imageUrl: model.picUrl!,
+        //     width: Platform.isWindows ? 50 : 25,
+        //     placeholder: (context, url) {
+        //       return Image.network(
+        //           'https://s2.music.126.net/style/web2/img/outchain/loading.gif');
+        //     },
+        //     errorWidget: (context, error, stackTrace) {
+        //       debugPrint('列表图片加载失败');
+        //       return const Icon(Icons.info, color: Colors.white);
+        //     })
+        );
 
-    final nameWidget = ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
-        child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 15),
-            child: Text(model.name!,
-                style: MyTheme.middleTextStyle,
-                overflow: TextOverflow.ellipsis)));
+    final nameWidget = Obx(() {
+      final windowsWidth = homeController.windowsWidth.value;
+      return ConstrainedBox(
+          constraints: BoxConstraints(
+              maxWidth: Platform.isWindows
+                  ? windowsWidth <= 1480
+                      ? 190
+                      : 280
+                  : 280),
+          child: Container(
+              margin:
+                  EdgeInsets.symmetric(horizontal: Platform.isWindows ? 15 : 7),
+              child: Text(model.name!,
+                  style: MyTheme.middleTextStyle,
+                  overflow: TextOverflow.ellipsis)));
+    });
 
     final artistWidget = ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
+        constraints: BoxConstraints(maxWidth: Platform.isWindows ? 280 : 200),
         child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 15),
+            margin: EdgeInsets.only(left: Platform.isWindows ? 15 : 7),
             child: Text(model.artist!,
                 style: MyTheme.middleTextStyle.copyWith(color: Colors.grey),
                 overflow: TextOverflow.ellipsis)));
@@ -88,22 +106,22 @@ class _SongItemState extends State<SongItem> {
 
     Widget background({required Widget child}) {
       return Obx(() {
-        bool choose = homeController.chooseIndex.value == widget.index;
+        bool choose = homeController.chooseId.value == model.id;
         return ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Container(
-                color: choose ? Colors.white.withAlpha(50) : Colors.transparent,
+                color: choose ? Colors.white.withAlpha(30) : Colors.transparent,
                 child: GestureDetector(
                     onDoubleTap: () {
-                      widget.onDoubleTap(widget.index);
-                      widget.onTap(widget.index);
+                      widget.onDoubleTap(model.id!);
+                      widget.onTap(model.id!);
                     },
                     child: MaterialButton(
-                        padding: const EdgeInsets.fromLTRB(0, 20, 10, 20),
+                        padding: EdgeInsets.zero,
                         splashColor: Colors.transparent,
-                        hoverColor: Colors.white.withAlpha(50),
+                        hoverColor: Colors.white.withAlpha(30),
                         onPressed: () {
-                          widget.onTap(widget.index);
+                          widget.onTap(model.id!);
                         },
                         child: child))));
       });
@@ -121,24 +139,25 @@ class _SongItemState extends State<SongItem> {
                 index: "1",
                 icon: Icons.playlist_add,
                 title: "下一首播放",
-                onTap: () => homeController.insertNext(widget.index)),
+                onTap: () => homeController.insertNext(model.id!)),
             moreMenuItem(
                 index: "2",
                 icon: Icons.share,
                 title: "分享",
-                onTap: () => homeController.share(widget.index))
+                onTap: () => homeController.share(model.id!))
           ];
         },
         child: const Icon(Icons.more_horiz, color: Colors.white, size: 30));
 
     return background(
         child: Row(children: [
+      sb(width: Platform.isWindows ? 0 : 5),
       indexWidget(),
       picWidget,
       songInfo,
       Expanded(child: sb()),
       more,
-      sb(width: 5)
+      sb(width: Platform.isWindows ? 10 : 5)
     ]));
   }
 }
@@ -155,77 +174,92 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
   Widget background({required Widget child}) {
     return Container(
-        color: const Color.fromRGBO(26, 26, 35, 1), height: 80, child: child);
+        color: const Color.fromRGBO(26, 26, 35, 1),
+        height: Platform.isWindows ? 80 : 40,
+        child: child);
   }
 
   Widget leftWidget() {
-    return Obx(() {
-      final model = homeController.musicList.isEmpty
-          ? SongModel()
-          : homeController.musicList[homeController.playIndex.value];
-      final picWidget = ClipRRect(
-          borderRadius: BorderRadius.circular(5),
-          child: CachedNetworkImage(
-              imageUrl: model.picUrl! == ''
-                  ? 'https://s2.music.126.net/style/web2/img/outchain/loading.gif'
-                  : model.picUrl!,
-              width: 50,
-              placeholder: (context, url) {
-                return Image.network(
-                    'https://s2.music.126.net/style/web2/img/outchain/loading.gif');
-              },
-              errorWidget: (context, error, stackTrace) {
-                debugPrint('底部图片加载失败');
-                return const Icon(Icons.info, color: Colors.white);
-              }));
-      final name = Text(model.name ?? '', style: MyTheme.middleTextStyle);
-      final specer = Text('-', style: MyTheme.middleTextStyle);
-      final artist = Text(model.artist ?? '',
-          style: MyTheme.middleTextStyle.copyWith(color: Colors.grey));
-      final more = PopupMenuButton(
-          color: const Color.fromRGBO(45, 45, 56, 1),
-          padding: EdgeInsets.zero,
-          offset: const Offset(40, 0),
-          tooltip: "更多",
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          itemBuilder: (context) {
-            return [
-              moreMenuItem(
-                  index: "1",
-                  icon: Icons.file_download,
-                  title: "下载",
-                  onTap: () =>
-                      homeController.download(homeController.playIndex.value)),
-              moreMenuItem(
-                  index: "2",
-                  icon: Icons.share,
-                  iconSize: 20,
-                  title: "分享",
-                  onTap: () =>
-                      homeController.share(homeController.playIndex.value))
-            ];
-          },
-          child: const Icon(Icons.more_horiz, color: Colors.white, size: 27));
+    SongModel model = SongModel();
+    final playIndex = homeController.getSongIndex(homeController.playId.value);
+    if (homeController.musicList.isNotEmpty) {
+      model = homeController.musicList[playIndex];
+    }
+    final picWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(5), child: sb()
+        // CachedNetworkImage(
+        //     imageUrl: model.picUrl! == ''
+        //         ? 'https://s2.music.126.net/style/web2/img/outchain/loading.gif'
+        //         : model.picUrl!,
+        //     width: 50,
+        //     placeholder: (context, url) {
+        //       return Image.network(
+        //           'https://s2.music.126.net/style/web2/img/outchain/loading.gif');
+        //     },
+        //     errorWidget: (context, error, stackTrace) {
+        //       debugPrint('底部图片加载失败');
+        //       return const Icon(Icons.info, color: Colors.white);
+        //     })
+        );
+    final name = Text(model.name ?? '', style: MyTheme.middleTextStyle);
+    final specer = Text('-', style: MyTheme.middleTextStyle);
+    final artist = Text(model.artist ?? '',
+        style: Platform.isWindows
+            ? MyTheme.middleTextStyle.copyWith(color: Colors.grey)
+            : MyTheme.minTextStyle.copyWith(color: Colors.grey));
+    final more = PopupMenuButton(
+        color: const Color.fromRGBO(45, 45, 56, 1),
+        padding: EdgeInsets.zero,
+        offset: const Offset(40, 0),
+        tooltip: "更多",
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        itemBuilder: (context) {
+          return [
+            moreMenuItem(
+                index: "1",
+                icon: Icons.file_download,
+                title: "下载",
+                onTap: () => homeController.download(model.id!)),
+            moreMenuItem(
+                index: "2",
+                icon: Icons.share,
+                iconSize: 20,
+                title: "分享",
+                onTap: () => homeController.share(model.id!))
+          ];
+        },
+        child: Icon(Icons.more_horiz,
+            color: Colors.white, size: Platform.isWindows ? 27 : 13));
 
-      final nameWidget =
-          Row(children: [name, sb(width: 5), specer, sb(width: 5), artist]);
-      final songInfo = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            sb(),
-            SizedBox(
-                width: 280,
-                height: 30,
-                child: model.name!.length < 25
-                    ? nameWidget
-                    : MarqueeWidget(child: nameWidget)),
-            more,
-            sb(height: 1)
-          ]);
-      return Row(children: [picWidget, sb(width: 10), songInfo]);
-    });
+    final nameWidget = Platform.isWindows
+        ? Row(children: [name, sb(width: 5), specer, sb(width: 5), artist])
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [name, artist]);
+    final songInfo = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          sb(),
+          SizedBox(
+              width: Platform.isWindows ? 280 : 140,
+              // height: Platform.isWindows ? 30 : 15,
+              child: model.name!.length < 25
+                  ? nameWidget
+                  : MarqueeWidget(child: nameWidget)),
+          Platform.isWindows ? more : sb(),
+          // sb(height: 1)
+        ]);
+    return GestureDetector(
+        onTap: () async {
+          Get.to(const LyricPage());
+        },
+        child: Row(children: [
+          picWidget,
+          sb(width: Platform.isWindows ? 10 : 5),
+          songInfo
+        ]));
   }
 
   Widget rightWidget() {
@@ -236,7 +270,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
       IconData loopIcon(int playMode) {
         if (playMode == 0) {
-          return Icons.loop;
+          return Icons.repeat;
         }
         if (playMode == 1) {
           return Icons.repeat_one;
@@ -267,7 +301,8 @@ class _BottomPlayerState extends State<BottomPlayer> {
             }
             homeController.setPlayMode(newPlayMode);
           },
-          child: Icon(loopIcon(nowPlayMode), color: Colors.grey, size: 25));
+          child: Icon(loopIcon(nowPlayMode),
+              color: Colors.grey, size: Platform.isWindows ? 25 : 20));
     });
 
     final volumeIcon = Obx(() => GestureDetector(
@@ -308,18 +343,26 @@ class _BottomPlayerState extends State<BottomPlayer> {
                 onChangeEnd: (value) {
                   homeController.setVolume(value);
                 }))));
-    return Row(children: [playMode, sb(width: 10), volumeIcon, slider]);
+    return Platform.isWindows
+        ? Row(children: [
+            playMode,
+            sb(width: 10),
+            volumeIcon,
+            sb(width: 5),
+            slider
+          ])
+        : playMode;
   }
 
   @override
   Widget build(BuildContext context) {
     return background(
         child: Row(children: [
-      sb(width: 35),
-      leftWidget(),
+      sb(width: Platform.isWindows ? 35 : 0),
+      Obx(() => leftWidget()),
       Expanded(child: sb()),
       rightWidget(),
-      sb(width: 30)
+      sb(width: Platform.isWindows ? 30 : 5)
     ]));
   }
 }
@@ -336,30 +379,170 @@ class _HomeBackgroundState extends State<HomeBackground> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final model = homeController.musicList.isEmpty
-          ? SongModel()
-          : homeController.musicList[homeController.playIndex.value];
+      SongModel model = SongModel();
+      final playIndex =
+          homeController.getSongIndex(homeController.playId.value);
+      if (homeController.musicList.isNotEmpty) {
+        model = homeController.musicList[playIndex];
+      }
       final picUrl = model.picUrl;
       final background = Container(color: const Color.fromRGBO(19, 19, 26, 1));
       if (picUrl == '') {
         return background;
       }
-      return Blur(
-          blur: 80,
-          colorOpacity: 0.5,
-          blurColor: Colors.black,
-          child: CachedNetworkImage(
-              imageUrl: picUrl!,
-              width: context.width,
-              height: context.height,
-              fit: BoxFit.fill,
-              placeholder: (context, url) {
-                return background;
-              },
-              errorWidget: (context, error, stackTrace) {
-                debugPrint('背景图片加载失败');
-                return background;
-              }));
+      return background;
+      // return Blur(
+      //     blur: 80,
+      //     colorOpacity: 0.5,
+      //     blurColor: Colors.black,
+      //     child: CachedNetworkImage(
+      //         imageUrl: picUrl!,
+      //         width: context.width,
+      //         height: context.height,
+      //         fit: BoxFit.fill,
+      //         placeholder: (context, url) {
+      //           return background;
+      //         },
+      //         errorWidget: (context, error, stackTrace) {
+      //           debugPrint('背景图片加载失败');
+      //           return background;
+      //         }));
     });
+  }
+}
+
+class AnimatedSearchBox extends StatefulWidget {
+  const AnimatedSearchBox({super.key});
+
+  @override
+  AnimatedSearchBoxState createState() => AnimatedSearchBoxState();
+}
+
+class AnimatedSearchBoxState extends State<AnimatedSearchBox> {
+  final homeController = Get.find<HomeController>();
+  final TextEditingController _textController = TextEditingController();
+  bool _isShowClear = false;
+  final double _minWidth = 80;
+  final double _maxWIdth = 180;
+  double _width = 0;
+  bool _isExpand = false;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _width = _minWidth;
+    _focusNodeListener();
+    setState(() {});
+  }
+
+  void _showClear(String value) {
+    if (value != '') {
+      _isShowClear = true;
+    } else {
+      _isShowClear = false;
+    }
+    setState(() {});
+  }
+
+  void _changeWidth() {
+    if (_isExpand) {
+      _width = _maxWIdth;
+    } else {
+      _width = _minWidth;
+    }
+    setState(() {});
+  }
+
+  void _focusNodeListener() {
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        _isExpand = true;
+      } else if (_textController.text.isEmpty) {
+        _isExpand = false;
+      }
+      _changeWidth();
+    });
+  }
+
+  void _firstFocue() {
+    FocusScope.of(context).requestFocus(_focusNode);
+    _width = _maxWIdth;
+    _isExpand = true;
+    setState(() {});
+  }
+
+  void _searchSong(String value) {
+    List<int> searchList = [];
+    homeController.searchList.clear();
+    for (var element in homeController.musicList) {
+      if (element.name!.contains(value) || element.artist!.contains(value)) {
+        searchList.add(element.id!);
+      }
+    }
+    homeController.searchList.addAll(searchList);
+    debugPrint('搜索结果到:${searchList.length}条结果');
+  }
+
+  void _clearSearch() {
+    _textController.clear();
+    _isShowClear = false;
+    homeController.searchList.clear();
+    _isExpand = false;
+    _changeWidth();
+    _focusNode.unfocus();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+        onTap: () {
+          _firstFocue();
+        },
+        child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: _width,
+            height: 30,
+            decoration: BoxDecoration(
+                color: Colors.black.withAlpha(100),
+                borderRadius: BorderRadius.circular(20)),
+            child: Row(children: [
+              sb(width: 10),
+              Container(
+                  padding: EdgeInsets.only(top: Platform.isWindows ? 4 : 0),
+                  child: const Icon(Icons.search,
+                      color: Color.fromRGBO(187, 183, 185, 1), size: 18)),
+              Expanded(
+                  child: Container(
+                      padding: const EdgeInsets.only(left: 1, bottom: 2.5),
+                      child: TextField(
+                          focusNode: _focusNode,
+                          controller: _textController,
+                          style: MyTheme.middleTextStyle,
+                          cursorColor: Colors.white,
+                          cursorWidth: 1,
+                          cursorHeight: 20,
+                          decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '搜索',
+                              hintStyle: MyTheme.middleTextStyle.copyWith(
+                                  color:
+                                      const Color.fromRGBO(117, 106, 110, 1))),
+                          onChanged: (value) {
+                            _showClear(value);
+                            _searchSong(value);
+                          }))),
+              sb(width: Platform.isWindows ? 10 : 5),
+              _isShowClear
+                  ? GestureDetector(
+                      onTap: () {
+                        _clearSearch();
+                      },
+                      child:
+                          const Icon(Icons.clear, color: Colors.grey, size: 16))
+                  : sb(),
+              sb(width: Platform.isWindows ? 10 : 5)
+            ])));
   }
 }

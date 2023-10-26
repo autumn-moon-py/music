@@ -10,12 +10,16 @@ dependencies:
     sdk: flutter
   get: ^4.6.6
   http: ^1.1.0
-  cached_network_image: ^3.2.3
-  media_kit: ^1.1.7
-  media_kit_libs_audio: ^1.0.1
-  shared_preferences: ^2.2.0
+  cached_network_image: ^3.3.0
+  media_kit: ^1.1.10+1
+  media_kit_libs_audio: ^1.0.4
   blur: ^3.1.0
   flutter_easyloading: ^3.0.5
+  shared_preferences: ^2.2.0
+  keframe: ^3.0.0
+  window_manager: ^0.3.6
+  connectivity_plus: ^4.0.2
+  windows_taskbar: ^1.1.1
 
 dev_dependencies:
   flutter_test:

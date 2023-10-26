@@ -5,8 +5,8 @@ import 'package:music/model/song_model.dart';
 import '../utils/utils.dart';
 
 class MusicList {
-  static Future<List<SongModel>> getLocelMusicList() async {
-    Map jsonData = await readJson('assets/list.json');
+  static Future<List<SongModel>> getLocelMusicList(String path) async {
+    Map jsonData = await readJson('assets/$path.json');
     List jsonMusicList = jsonData['result']['tracks'];
     List<SongModel> songModelList = getSongModelList(jsonMusicList);
     return songModelList;
@@ -38,8 +38,6 @@ class MusicList {
           id: id, name: name, artist: artist, picUrl: picUrl, songUrl: songUrl);
       songModelList.add(songModel);
     }
-    songModelList.insert(0, songModelList[0]);
-    // debugPrint('歌曲数量：${songModelList.length}');
     return songModelList;
   }
 

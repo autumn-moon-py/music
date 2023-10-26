@@ -1,8 +1,17 @@
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
-import 'package:music/page/Home/widget.dart';
+import 'package:keframe/keframe.dart';
+import 'package:music/model/song_model.dart';
+import 'package:music/page/home/widget.dart';
 import 'package:music/style/app_style.dart';
 import 'package:music/utils/utils.dart';
+import 'package:music/widget.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'controller.dart';
 
@@ -17,6 +26,26 @@ class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+  final homeController = Get.put(HomeController());
+
+  @override
+  void initState() {
+    super.initState();
+    checkNetwork();
+  }
+
+  void checkNetwork() async {
+    final connectivityResult = Connectivity();
+    connectivityResult.onConnectivityChanged
+        .listen((ConnectivityResult result) {
+      if (result == ConnectivityResult.none) {
+        EasyLoading.showToast('无网络');
+        homeController.noNetwork.value = true;
+      } else {
+        homeController.noNetwork.value = false;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,32 +58,67 @@ class _HomeViewGetX extends GetView<HomeController> {
   const _HomeViewGetX({Key? key}) : super(key: key);
 
   Widget musicListWidget() {
-    return GridView.builder(
-        padding: EdgeInsets.zero,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, childAspectRatio: 5),
-        itemCount: controller.musicList.length,
-        itemBuilder: (ctx, index) {
-          final nowIndex = index + 1;
-          return SongItem(
-              index: nowIndex,
-              onTap: controller.changeChooseIndex,
-              onDoubleTap: controller.changePlayIndex);
-        });
+    final scrollController = ScrollController();
+    if (controller.noNetwork.value) {
+      return Center(child: Text('无网络', style: MyTheme.middleTextStyle));
+    }
+    return SizeCacheWidget(
+        estimateCount: Platform.isWindows ? 35 : 20,
+        child: Scrollbar(
+            controller: scrollController,
+            child: GridView.builder(
+                controller: scrollController,
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.only(right: Platform.isWindows ? 10 : 0),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: Platform.isWindows ? 3 : 1,
+                    childAspectRatio: Platform.isWindows ? 6 : 7),
+                itemCount: controller.searchList.isEmpty
+                    ? controller.musicList.length
+                    : controller.searchList.length,
+                itemBuilder: (ctx, index) {
+                  final searchSongList = <SongModel>[];
+                  Widget songItem(SongModel model, List<SongModel> musicList) {
+                    return FrameSeparateWidget(
+                        index: index,
+                        child: SongItem(
+                            index: index,
+                            model: model,
+                            musicList: musicList,
+                            onTap: controller.changeChooseIndex,
+                            onDoubleTap: controller.changePlayIndex));
+                  }
+
+                  if (controller.searchList.isNotEmpty) {
+                    for (var id in controller.searchList) {
+                      final songModel = controller.musicList
+                          .firstWhere((element) => element.id == id);
+                      searchSongList.add(songModel);
+                    }
+                    return songItem(searchSongList[index], searchSongList);
+                  }
+                  return songItem(
+                      controller.musicList[index], controller.musicList);
+                })));
   }
 
   Widget middleWidget() {
+    if (controller.noNetwork.value) {
+      return sb();
+    }
     final previous = GestureDetector(
         onTap: () {
           controller.previous();
         },
-        child: const Icon(Icons.skip_previous, color: Colors.white, size: 30));
+        child: Icon(Icons.skip_previous,
+            color: Colors.white, size: Platform.isWindows ? 30 : 20));
 
     final next = GestureDetector(
         onTap: () {
           controller.next();
         },
-        child: const Icon(Icons.skip_next, color: Colors.white, size: 30));
+        child: Icon(Icons.skip_next,
+            color: Colors.white, size: Platform.isWindows ? 30 : 20));
 
     final play = Obx(() => GestureDetector(
         onTap: () {
@@ -73,7 +137,7 @@ class _HomeViewGetX extends GetView<HomeController> {
                         ? Icons.pause
                         : Icons.play_arrow_rounded,
                     color: Colors.white,
-                    size: 30)))));
+                    size: Platform.isWindows ? 30 : 25)))));
 
     final slider = Obx(() {
       final position = controller.position.value;
@@ -91,16 +155,13 @@ class _HomeViewGetX extends GetView<HomeController> {
               inactiveTrackColor: const Color.fromRGBO(61, 61, 68, 1)),
           child: Container(
               padding: const EdgeInsets.only(top: 1),
-              width: 405,
-              height: 0,
+              width: Platform.isWindows ? 405 : 200,
+              height: 6,
               child: Slider(
                   value: position.toDouble(),
                   min: 0,
-                  max: duration.toDouble(),
+                  max: duration.toDouble() == 0 ? 100 : duration.toDouble(),
                   onChanged: (value) {
-                    controller.seek(Duration(milliseconds: value.toInt()));
-                  },
-                  onChangeEnd: (value) {
                     controller.seek(Duration(milliseconds: value.toInt()));
                   })));
 
@@ -114,32 +175,67 @@ class _HomeViewGetX extends GetView<HomeController> {
 
       return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         positionWidget,
-        sb(width: 8),
+        sb(width: Platform.isWindows ? 8 : 4),
         slider,
-        sb(width: 8),
+        sb(width: Platform.isWindows ? 8 : 4),
         durationWidget
       ]);
     });
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [previous, sb(width: 10), play, sb(width: 10), next]),
-      sb(height: 5),
-      slider
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        previous,
+        sb(width: Platform.isWindows ? 10 : 5),
+        play,
+        sb(width: Platform.isWindows ? 10 : 5),
+        next
+      ]),
+      sb(height: Platform.isWindows ? 5 : 0),
+      Platform.isWindows ? slider : sb()
     ]);
   }
 
   Widget _buildView() {
-    return Stack(children: [
-      const HomeBackground(),
-      Column(
-          children: [Expanded(child: musicListWidget()), const BottomPlayer()]),
-      Container(
-          alignment: Alignment.bottomCenter,
-          margin: const EdgeInsets.only(bottom: 15),
-          child: middleWidget())
-    ]);
+    return RawKeyboardListener(
+        focusNode: FocusNode(),
+        autofocus: true,
+        onKey: (event) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            controller.setVolume(controller.volume.value + 10);
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            controller.setVolume(controller.volume.value - 10);
+          }
+        },
+        child: Stack(children: [
+          const HomeBackground(),
+          Column(children: [
+            Platform.isWindows
+                ? GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onPanStart: (details) {
+                      windowManager.startDragging();
+                    },
+                    child: Container(
+                        color: Colors.transparent,
+                        width: double.infinity,
+                        child: sb(height: 30)))
+                : sb(height: 30),
+            Platform.isWindows ? const WindowsTab() : sb(),
+            sb(height: Platform.isWindows ? 15 : 0),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+              const AnimatedSearchBox(),
+              sb(width: Platform.isWindows ? 35 : 25)
+            ]),
+            sb(height: Platform.isWindows ? 10 : 0),
+            Expanded(child: Obx(() => musicListWidget())),
+            Obx(() => !controller.noNetwork.value ? const BottomPlayer() : sb())
+          ]),
+          Container(
+              alignment: Alignment.bottomCenter,
+              margin: EdgeInsets.only(bottom: Platform.isWindows ? 15 : 3),
+              child: middleWidget())
+        ]));
   }
 
   @override

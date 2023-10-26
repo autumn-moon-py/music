@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:music/utils/utils.dart';
+import 'package:window_manager/window_manager.dart';
+
+import 'page/home/controller.dart';
 
 class MarqueeWidget extends StatefulWidget {
   final Widget child;
@@ -98,5 +102,146 @@ class MarqueeWidgetState extends State<MarqueeWidget>
         controller: scroController,
         physics: const NeverScrollableScrollPhysics(),
         children: <Widget>[widget.child, sb(width: 20), widget.child]);
+  }
+}
+
+class WindowsTab extends StatefulWidget {
+  const WindowsTab({super.key});
+
+  @override
+  State<WindowsTab> createState() => _WindowsTabState();
+}
+
+class _WindowsTabState extends State<WindowsTab> with WindowListener {
+  bool _isMax = false;
+  final homeController = Get.find<HomeController>();
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() {}
+
+  @override
+  void onWindowMaximize() {
+    _isMax = true;
+    setState(() {});
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    _isMax = false;
+    setState(() {});
+  }
+
+  @override
+  void onWindowMinimize() {}
+
+  @override
+  void onWindowRestore() {}
+
+  @override
+  void onWindowResize() {}
+
+  @override
+  void onWindowMove() {}
+
+  Widget _button(
+      {required IconData icon, double? size, required VoidCallback onPressed}) {
+    return GestureDetector(
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          child: Icon(icon,
+              color: const Color.fromRGBO(195, 175, 177, 1), size: size ?? 20),
+        ));
+  }
+
+  Widget _settingButton() {
+    return _button(icon: Icons.settings, onPressed: () {});
+  }
+
+  // ignore: unused_element
+  Widget _miniButton() {
+    return _button(icon: Icons.crop_5_4, onPressed: () {});
+  }
+
+  Widget _minButton() {
+    return _button(
+        icon: Icons.horizontal_rule,
+        onPressed: () {
+          windowManager.minimize();
+        });
+  }
+
+  Widget _maxButton() {
+    return RotatedBox(
+        quarterTurns: 2,
+        child: _button(
+            icon: _isMax ? Icons.filter_none : Icons.crop_din,
+            size: 16,
+            onPressed: () async {
+              if (_isMax) {
+                windowManager.unmaximize();
+              } else {
+                windowManager.maximize();
+              }
+              final windowsSize = await windowManager.getSize();
+              homeController.windowsWidth.value = windowsSize.width;
+            }));
+  }
+
+  Widget _closeButton() {
+    return _button(
+        icon: Icons.close,
+        onPressed: () {
+          windowManager.destroy();
+        });
+  }
+
+  Widget _windowsButton() {
+    return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      _settingButton(),
+      // _miniButton(),
+      _minButton(),
+      _maxButton(),
+      _closeButton(),
+      sb(width: 30)
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _windowsButton();
+  }
+}
+
+class WDCustomTrackShape extends RoundedRectSliderTrackShape {
+  double addHeight;
+  WDCustomTrackShape({this.addHeight = 0});
+
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final double trackHeight = sliderTheme.trackHeight ?? 1;
+    final double trackLeft = offset.dx;
+    final double trackTop =
+        offset.dy + (parentBox.size.height - trackHeight) / 2;
+    final double trackWidth = parentBox.size.width;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
   }
 }

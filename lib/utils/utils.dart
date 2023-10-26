@@ -25,6 +25,33 @@ Future<Map> getHttp(String url) async {
   }
 }
 
+Map<String, String> headers() {
+  return {
+    'authority': 'p2.music.126.net',
+    'method': 'GET',
+    'path': '/9mBj0oY95FqKkVWzMeoxog==/109951168924619987.jpg',
+    'scheme': 'https',
+    'Accept':
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'zh-CN,zh;q=0.9',
+    'Cache-Control': 'max-age=0',
+    'If-Modified-Since': 'Mon, 18 Sep 2023 19:21:18 Asia/Shanghai',
+    'If-None-Match': '9a578950cc29c69692c464a3e70e1243',
+    'Sec-Ch-Ua':
+        '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+  };
+}
+
 class MusicAPI {
   static String neteaseSongUrl([int id = 986150480]) {
     return 'https://music.163.com/song/media/outer/url?id=$id.mp3';
@@ -44,6 +71,10 @@ class MusicAPI {
 
   static String neteaseLyricUrl(int id) {
     return 'https://music.163.com/api/song/lyric?id=$id&lv=1&kv=1&tv=1';
+  }
+
+  static String vercelSongUrl(String name) {
+    return 'https://video.subrecovery.top/proxy/music.subrecovery.top/$name.mp3';
   }
 }
 
@@ -84,25 +115,4 @@ String formatDuration(Duration duration) {
   String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
   String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
   return "$twoDigitMinutes:$twoDigitSeconds";
-}
-
-class WDCustomTrackShape extends RoundedRectSliderTrackShape {
-  double addHeight;
-  WDCustomTrackShape({this.addHeight = 0});
-
-  @override
-  Rect getPreferredRect({
-    required RenderBox parentBox,
-    Offset offset = Offset.zero,
-    required SliderThemeData sliderTheme,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-  }) {
-    final double trackHeight = sliderTheme.trackHeight ?? 1;
-    final double trackLeft = offset.dx;
-    final double trackTop =
-        offset.dy + (parentBox.size.height - trackHeight) / 2;
-    final double trackWidth = parentBox.size.width;
-    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
-  }
 }
