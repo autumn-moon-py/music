@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:music/utils/utils.dart';
+import 'package:music/utils.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'page/home/controller.dart';

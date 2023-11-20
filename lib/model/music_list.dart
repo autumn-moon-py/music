@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:music/model/song_model.dart';
 
-import '../utils/utils.dart';
+import '../utils.dart';
 
 class MusicList {
   static Future<List<SongModel>> getLocelMusicList(String path) async {

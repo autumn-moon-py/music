@@ -4,10 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:music/model/lyric_model.dart';
 import 'package:music/page/home/widget.dart';
-import 'package:music/style/app_style.dart';
-import 'package:music/utils/utils.dart';
+import 'package:music/app_style.dart';
+import 'package:music/utils.dart';
 import 'package:music/widget.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'controller.dart';
 
@@ -36,28 +37,23 @@ class _LyricViewGetX extends GetView<LyricController> {
   Widget _lyricList() {
     return Padding(
         padding: EdgeInsets.only(top: Platform.isWindows ? 150 : 80),
-        child:
-            // ListView.builder
-            PageView.builder(
-                itemCount: controller.lyricModelList.length,
-                controller: controller.lyricController,
-                scrollDirection: Axis.vertical,
-                physics: const NeverScrollableScrollPhysics(),
-                // padding: EdgeInsets.only(
-                //     top: Platform.isWindows ? 100 : 100,
-                //     bottom: Platform.isWindows ? 400 : 100),
-                itemBuilder: (context, index) {
-                  final line = controller.lyricModelList[index];
-                  late Duration? next;
-                  bool last = false;
-                  if (index != controller.lyricModelList.length - 1) {
-                    next = controller.lyricModelList[index + 1].startTime;
-                  } else {
-                    next = controller.duration;
-                    last = true;
-                  }
-                  return _lyricItem(line, last, next, index, context);
-                }));
+        child: PageView.builder(
+            itemCount: controller.lyricModelList.length,
+            controller: controller.lyricController,
+            scrollDirection: Axis.vertical,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (context, index) {
+              final line = controller.lyricModelList[index];
+              late Duration? next;
+              bool last = false;
+              if (index != controller.lyricModelList.length - 1) {
+                next = controller.lyricModelList[index + 1].startTime;
+              } else {
+                next = controller.duration;
+                last = true;
+              }
+              return _lyricItem(line, last, next, index, context);
+            }));
   }
 
   Widget _lyricItem(LyricLine line, bool last, Duration next, int index,
@@ -138,25 +134,28 @@ class _LyricViewGetX extends GetView<LyricController> {
         style: Platform.isWindows
             ? MyTheme.bigTextStyle
             : MyTheme.middleTextStyle);
-    final name = ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 300, maxHeight: 15),
-        child: controller.nowPlaySong.name!.length < 25
-            ? nameWidget
-            : MarqueeWidget(child: nameWidget));
+    final name = GetPlatform.isDesktop
+        ? nameWidget
+        : ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300, maxHeight: 15),
+            child: controller.nowPlaySong.name!.length < 25
+                ? nameWidget
+                : MarqueeWidget(child: nameWidget));
     final artist = Text(controller.nowPlaySong.artist!,
         style: Platform.isWindows
             ? MyTheme.middleTextStyle.copyWith(color: Colors.grey)
             : MyTheme.minTextStyle.copyWith(color: Colors.grey));
-    final back = GestureDetector(
-      onTap: () {
-        Get.back();
-      },
-      child: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
-    );
+    final back = GetPlatform.isDesktop
+        ? sb()
+        : GestureDetector(
+            onTap: () {
+              Get.back();
+            },
+            child: const Icon(Icons.arrow_back, color: Colors.white, size: 30));
     return Container(
         alignment: Platform.isWindows ? Alignment.topCenter : Alignment.topLeft,
         margin: EdgeInsets.only(
-            left: Platform.isWindows ? 0 : 10,
+            left: Platform.isWindows ? 0 : 5,
             top: Platform.isWindows ? 80 : 30),
         child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -165,8 +164,10 @@ class _LyricViewGetX extends GetView<LyricController> {
               back,
               sb(width: 5),
               Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [name, sb(height: 5), artist]),
+                  crossAxisAlignment: GetPlatform.isDesktop
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.start,
+                  children: [name, sb(height: 5), artist])
             ]));
   }
 
@@ -199,6 +200,17 @@ class _LyricViewGetX extends GetView<LyricController> {
                   const HomeBackground(),
                   _lyricList(),
                   _songTitle(),
+                  Platform.isWindows
+                      ? GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onPanStart: (details) {
+                            windowManager.startDragging();
+                          },
+                          child: Container(
+                              color: Colors.transparent,
+                              width: double.infinity,
+                              child: sb(height: 30)))
+                      : sb(height: 0),
                   Platform.isWindows
                       ? Obx(() {
                           if (controller.showBotton.value) {

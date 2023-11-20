@@ -3,29 +3,20 @@ import 'package:get/get.dart';
 import 'package:music/model/lyric_model.dart';
 import 'package:music/model/song_model.dart';
 import 'package:music/page/home/controller.dart';
-import 'package:music/utils/utils.dart';
+import 'package:music/utils.dart';
 
 class LyricController extends GetxController {
   LyricController();
 
   List<LyricLine> lyricModelList = [];
-  late SongModel nowPlaySong;
+  SongModel get nowPlaySong => homeController.nowPlaySong;
   Duration position = const Duration();
   Duration duration = const Duration();
   RxInt lineIndex = 0.obs;
   RxBool playing = false.obs;
-  // final lyricController = ScrollController();
-  final lyricController = PageController(viewportFraction: 0.1);
+  final homeController = Get.put(HomeController());
+  final lyricController = PageController(viewportFraction: 0.2);
   RxBool showBotton = true.obs;
-
-  _initData() async {
-    final homeController = Get.find<HomeController>();
-    if (lyricModelList.isEmpty) {
-      nowPlaySong = homeController.nowPlaySong;
-      changeLyric();
-    }
-    update(["lyric"]);
-  }
 
   @override
   void onReady() {
@@ -33,25 +24,38 @@ class LyricController extends GetxController {
     _initData();
   }
 
-  Future<void> changeLyric() async {
-    final lyricJson = await getHttp(MusicAPI.neteaseLyricUrl(nowPlaySong.id!));
+  _initData() async {
+    changeLyric(nowPlaySong.id!);
+    update(["lyric"]);
+  }
+
+  Future<void> changeLyric(int id) async {
+    final lyricJson = await getHttp(MusicAPI.neteaseLyricUrl(id));
     final lyricString = lyricJson['lrc']['lyric'];
     lyricModelList = parseLyrics(lyricString);
+    try {
+      final tlyricString = lyricJson['tlyric']['lyric'];
+      if (tlyricString != '') {
+        final tlyricModelList = parseLyrics(tlyricString);
+        for (int m = 0; m < tlyricModelList.length; m++) {
+          for (int n = 0; n < lyricModelList.length; n++) {
+            if (lyricModelList[n].startTime == tlyricModelList[m].startTime) {
+              lyricModelList[n].text += '\n${tlyricModelList[m].text}';
+            }
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   void changeLyricLine(int index) {
     if (lineIndex.value != index) {
       lineIndex.value = index;
       if (lyricController.hasClients) {
-        // double nowOffset = lyricController.offset;
-        // nowOffset = index * (Platform.isWindows ? 53 : 28);
-        // lyricController.animateTo(nowOffset,
-        //     duration: const Duration(milliseconds: 100),
-        //     curve: Curves.bounceIn);
         lyricController.animateToPage(lineIndex.value,
             duration: const Duration(milliseconds: 100),
             curve: Curves.bounceIn);
-      } else {}
+      }
     }
   }
 

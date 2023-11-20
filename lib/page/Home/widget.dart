@@ -1,10 +1,13 @@
+// ignore_for_file: unused_import
+
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music/model/song_model.dart';
 import 'package:music/page/lyric/view.dart';
-import 'package:music/style/app_style.dart';
-import 'package:music/utils/utils.dart';
+import 'package:music/app_style.dart';
+import 'package:music/utils.dart';
 import 'package:music/widget.dart';
 
 import 'controller.dart';
@@ -59,7 +62,7 @@ class _SongItemState extends State<SongItem> {
 
     final picWidget = ClipRRect(
         borderRadius: BorderRadius.circular(5), child: sb()
-        //  CachedNetworkImage(
+        // CachedNetworkImage(
         //     imageUrl: model.picUrl!,
         //     width: Platform.isWindows ? 50 : 25,
         //     placeholder: (context, url) {
@@ -172,10 +175,37 @@ class _BottomPlayerState extends State<BottomPlayer> {
   final homeController = Get.find<HomeController>();
 
   Widget background({required Widget child}) {
-    return Container(
-        color: const Color.fromRGBO(26, 26, 35, 1),
-        height: Platform.isWindows ? 80 : 40,
-        child: child);
+    return GestureDetector(
+        onTap: () {
+          if (GetPlatform.isAndroid) Get.to(const LyricPage());
+        },
+        child: Container(
+            color: const Color.fromRGBO(26, 26, 35, 1),
+            height: Platform.isWindows ? 80 : 45,
+            child: child));
+  }
+
+  Widget _volumWidget() {
+    final volumeIcon = Obx(() => GestureDetector(
+        onTap: () {
+          if (homeController.volume.value != 0) {
+            homeController.oldVolume = homeController.volume.value;
+            homeController.volume.value = 0;
+            homeController.setVolume(0);
+          } else if (homeController.volume.value == 0) {
+            homeController.volume.value = homeController.oldVolume;
+            homeController.setVolume(homeController.oldVolume);
+          }
+        },
+        child: Container(
+            margin: const EdgeInsets.only(left: 5),
+            child: Icon(
+                homeController.volume.value == 0
+                    ? Icons.volume_off
+                    : Icons.volume_up,
+                color: Colors.grey,
+                size: 30))));
+    return volumeIcon;
   }
 
   Widget leftWidget() {
@@ -201,7 +231,6 @@ class _BottomPlayerState extends State<BottomPlayer> {
         //     })
         );
     final name = Text(model.name ?? '', style: MyTheme.middleTextStyle);
-    final specer = Text('-', style: MyTheme.middleTextStyle);
     final artist = Text(model.artist ?? '',
         style: Platform.isWindows
             ? MyTheme.middleTextStyle.copyWith(color: Colors.grey)
@@ -230,42 +259,31 @@ class _BottomPlayerState extends State<BottomPlayer> {
         child: Icon(Icons.more_horiz,
             color: Colors.white, size: Platform.isWindows ? 27 : 13));
 
-    final nameWidget = Platform.isWindows
-        ? Row(children: [name, sb(width: 5), specer, sb(width: 5), artist])
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [name, artist]);
     final songInfo = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisSize: MainAxisSize.min,
         children: [
           sb(),
-          Container(
-              margin: EdgeInsets.only(left: Platform.isWindows ? 5 : 0),
-              width: Platform.isWindows ? 280 : 120,
-              height: Platform.isWindows ? 38 : 30,
-              child: model.name!.length + model.artist!.length < 25
-                  ? nameWidget
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                          SizedBox(
-                              height: 18, child: MarqueeWidget(child: name)),
-                          artist
-                        ])),
-          Platform.isWindows ? more : sb()
+          model.name!.length < 35
+              ? name
+              : ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxWidth: 300, maxHeight: 18),
+                  child: MarqueeWidget(child: name)),
+          Row(children: [artist, sb(width: 5), more])
         ]);
-    return GestureDetector(
-        onTap: () async {
-          Get.to(const LyricPage());
-        },
-        child: Row(children: [
-          picWidget,
-          sb(width: Platform.isWindows ? 10 : 5),
-          songInfo
-        ]));
+
+    return GetPlatform.isAndroid
+        ? _volumWidget()
+        : GestureDetector(
+            onTap: () async {
+              Get.to(const LyricPage());
+            },
+            child: Row(children: [
+              picWidget,
+              sb(width: Platform.isWindows ? 10 : 5),
+              songInfo
+            ]));
   }
 
   Widget rightWidget() {
@@ -300,7 +318,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
             }
           },
           child: Icon(loopIcon(nowPlayMode),
-              color: Colors.grey, size: Platform.isWindows ? 25 : 20));
+              color: Colors.grey, size: Platform.isWindows ? 25 : 25));
     });
 
     final volumeIcon = Obx(() => GestureDetector(
@@ -356,7 +374,7 @@ class _BottomPlayerState extends State<BottomPlayer> {
   Widget build(BuildContext context) {
     return background(
         child: Row(children: [
-      sb(width: Platform.isWindows ? 35 : 0),
+      sb(width: Platform.isWindows ? 20 : 0),
       Obx(() => leftWidget()),
       Expanded(child: sb()),
       rightWidget(),
@@ -421,7 +439,7 @@ class AnimatedSearchBoxState extends State<AnimatedSearchBox> {
   final TextEditingController _textController = TextEditingController();
   bool _isShowClear = false;
   final double _minWidth = 80;
-  final double _maxWIdth = 180;
+  final double _maxWIdth = GetPlatform.isAndroid ? 160 : 180;
   double _width = 0;
   bool _isExpand = false;
   final FocusNode _focusNode = FocusNode();

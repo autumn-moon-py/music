@@ -21,6 +21,7 @@ dependencies:
   connectivity_plus: ^4.0.2
   windows_taskbar: ^1.1.1
   visibility_detector: ^0.4.0+2
+  just_audio: ^0.9.36
 
 dev_dependencies:
   flutter_test:
