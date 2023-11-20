@@ -57,6 +57,8 @@ class MusicAPI {
     return 'https://music.163.com/song/media/outer/url?id=$id.mp3';
   }
 
+  ///https://music.163.com/api/playlist/detail?id=986150480
+  ///https://music.163.com/api/playlist/detail?id=1987836021
   static String neteaseListUrl(int id) {
     return 'https://music.163.com/api/playlist/detail?id=$id';
   }

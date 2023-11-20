@@ -7,6 +7,7 @@ import 'package:music/page/home/widget.dart';
 import 'package:music/style/app_style.dart';
 import 'package:music/utils/utils.dart';
 import 'package:music/widget.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import 'controller.dart';
 
@@ -34,27 +35,29 @@ class _LyricViewGetX extends GetView<LyricController> {
 
   Widget _lyricList() {
     return Padding(
-      padding: EdgeInsets.only(top: Platform.isWindows ? 150 : 50),
-      child: ListView.builder(
-          itemCount: controller.lyricModelList.length,
-          controller: controller.lyricController,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-              top: Platform.isWindows ? 100 : 100,
-              bottom: Platform.isWindows ? 400 : 100),
-          itemBuilder: (context, index) {
-            final line = controller.lyricModelList[index];
-            late Duration? next;
-            bool last = false;
-            if (index != controller.lyricModelList.length - 1) {
-              next = controller.lyricModelList[index + 1].startTime;
-            } else {
-              next = controller.duration;
-              last = true;
-            }
-            return _lyricItem(line, last, next, index, context);
-          }),
-    );
+        padding: EdgeInsets.only(top: Platform.isWindows ? 150 : 80),
+        child:
+            // ListView.builder
+            PageView.builder(
+                itemCount: controller.lyricModelList.length,
+                controller: controller.lyricController,
+                scrollDirection: Axis.vertical,
+                physics: const NeverScrollableScrollPhysics(),
+                // padding: EdgeInsets.only(
+                //     top: Platform.isWindows ? 100 : 100,
+                //     bottom: Platform.isWindows ? 400 : 100),
+                itemBuilder: (context, index) {
+                  final line = controller.lyricModelList[index];
+                  late Duration? next;
+                  bool last = false;
+                  if (index != controller.lyricModelList.length - 1) {
+                    next = controller.lyricModelList[index + 1].startTime;
+                  } else {
+                    next = controller.duration;
+                    last = true;
+                  }
+                  return _lyricItem(line, last, next, index, context);
+                }));
   }
 
   Widget _lyricItem(LyricLine line, bool last, Duration next, int index,
@@ -72,7 +75,7 @@ class _LyricViewGetX extends GetView<LyricController> {
     }
     if (playHere) {
       style = style.copyWith(
-          fontSize: Platform.isWindows ? 30 : 25, fontWeight: FontWeight.bold);
+          fontSize: Platform.isWindows ? 30 : 20, fontWeight: FontWeight.bold);
     } else {
       style = style.copyWith(color: Colors.grey);
     }
@@ -82,8 +85,9 @@ class _LyricViewGetX extends GetView<LyricController> {
     }
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
       Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-          constraints: const BoxConstraints(maxWidth: 360),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
+          constraints: BoxConstraints(
+              maxWidth: Platform.isWindows ? double.infinity : 360),
           child: Text(line.text,
               style: style,
               textAlign: TextAlign.center,
@@ -130,22 +134,40 @@ class _LyricViewGetX extends GetView<LyricController> {
   }
 
   Widget _songTitle() {
-    final name = Text(controller.nowPlaySong.name!,
+    final nameWidget = Text(controller.nowPlaySong.name!,
         style: Platform.isWindows
             ? MyTheme.bigTextStyle
             : MyTheme.middleTextStyle);
+    final name = ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 300, maxHeight: 15),
+        child: controller.nowPlaySong.name!.length < 25
+            ? nameWidget
+            : MarqueeWidget(child: nameWidget));
     final artist = Text(controller.nowPlaySong.artist!,
         style: Platform.isWindows
             ? MyTheme.middleTextStyle.copyWith(color: Colors.grey)
             : MyTheme.minTextStyle.copyWith(color: Colors.grey));
+    final back = GestureDetector(
+      onTap: () {
+        Get.back();
+      },
+      child: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+    );
     return Container(
         alignment: Platform.isWindows ? Alignment.topCenter : Alignment.topLeft,
         margin: EdgeInsets.only(
             left: Platform.isWindows ? 0 : 10,
-            top: Platform.isWindows ? 80 : 20),
-        child: Column(
+            top: Platform.isWindows ? 80 : 30),
+        child: Row(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [name, sb(height: 5), artist]));
+            children: [
+              back,
+              sb(width: 5),
+              Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [name, sb(height: 5), artist]),
+            ]));
   }
 
   Widget _background() {
@@ -195,7 +217,15 @@ class _LyricViewGetX extends GetView<LyricController> {
         init: LyricController(),
         id: "lyric",
         builder: (_) {
-          return _background();
+          return VisibilityDetector(
+              key: const Key('my-widget-key'),
+              onVisibilityChanged: (visibilityInfo) {
+                if (visibilityInfo.visibleFraction == 1) {
+                  controller.lyricController
+                      .jumpToPage(controller.lineIndex.value);
+                }
+              },
+              child: _background());
         });
   }
 }

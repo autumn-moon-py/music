@@ -63,7 +63,7 @@ class _HomeViewGetX extends GetView<HomeController> {
       return Center(child: Text('无网络', style: MyTheme.middleTextStyle));
     }
     return SizeCacheWidget(
-        estimateCount: Platform.isWindows ? 35 : 20,
+        estimateCount: Platform.isWindows ? 40 : 20,
         child: Scrollbar(
             controller: scrollController,
             child: GridView.builder(
@@ -158,7 +158,7 @@ class _HomeViewGetX extends GetView<HomeController> {
               width: Platform.isWindows ? 405 : 200,
               height: 6,
               child: Slider(
-                  value: position.toDouble(),
+                  value: position.toDouble() < 0 ? 0 : position.toDouble(),
                   min: 0,
                   max: duration.toDouble() == 0 ? 100 : duration.toDouble(),
                   onChanged: (value) {

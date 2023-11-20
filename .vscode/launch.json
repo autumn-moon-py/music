@@ -6,9 +6,9 @@
             "name": "music",
             "request": "launch",
             "type": "dart",
-            "args": ["-vv",
-            // "--split-per-abi"
-        ]
+            "args": [ "-vv",
+                // "--split-per-abi"
+            ]
         }
     ]
 }

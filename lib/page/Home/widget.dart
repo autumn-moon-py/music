@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:music/model/song_model.dart';
 import 'package:music/page/lyric/view.dart';
 import 'package:music/style/app_style.dart';
@@ -242,14 +241,21 @@ class _BottomPlayerState extends State<BottomPlayer> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           sb(),
-          SizedBox(
-              width: Platform.isWindows ? 280 : 140,
-              // height: Platform.isWindows ? 30 : 15,
-              child: model.name!.length < 25
+          Container(
+              margin: EdgeInsets.only(left: Platform.isWindows ? 5 : 0),
+              width: Platform.isWindows ? 280 : 120,
+              height: Platform.isWindows ? 38 : 30,
+              child: model.name!.length + model.artist!.length < 25
                   ? nameWidget
-                  : MarqueeWidget(child: nameWidget)),
-          Platform.isWindows ? more : sb(),
-          // sb(height: 1)
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                          SizedBox(
+                              height: 18, child: MarqueeWidget(child: name)),
+                          artist
+                        ])),
+          Platform.isWindows ? more : sb()
         ]);
     return GestureDetector(
         onTap: () async {
@@ -283,23 +289,15 @@ class _BottomPlayerState extends State<BottomPlayer> {
 
       return GestureDetector(
           onTap: () {
-            late PlaylistMode newPlayMode;
             if (nowPlayMode == 0) {
-              newPlayMode = PlaylistMode.loop;
-              homeController.shuffle(false);
-              homeController.changePlayMode(1);
+              homeController.changePlayMode(1); //单曲
             }
             if (nowPlayMode == 1) {
-              newPlayMode = PlaylistMode.single;
-              homeController.shuffle(false);
-              homeController.changePlayMode(2);
+              homeController.changePlayMode(2); //乱序
             }
             if (nowPlayMode == 2) {
-              newPlayMode = PlaylistMode.loop;
-              homeController.shuffle(true);
-              homeController.changePlayMode(0);
+              homeController.changePlayMode(0); //循环
             }
-            homeController.setPlayMode(newPlayMode);
           },
           child: Icon(loopIcon(nowPlayMode),
               color: Colors.grey, size: Platform.isWindows ? 25 : 20));
@@ -515,7 +513,8 @@ class AnimatedSearchBoxState extends State<AnimatedSearchBox> {
                       color: Color.fromRGBO(187, 183, 185, 1), size: 18)),
               Expanded(
                   child: Container(
-                      padding: const EdgeInsets.only(left: 1, bottom: 2.5),
+                      padding: EdgeInsets.only(
+                          left: 1, bottom: GetPlatform.isDesktop ? 2.5 : 1),
                       child: TextField(
                           focusNode: _focusNode,
                           controller: _textController,

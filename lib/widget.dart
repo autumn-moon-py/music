@@ -101,7 +101,7 @@ class MarqueeWidgetState extends State<MarqueeWidget>
         scrollDirection: widget.scrollAxis,
         controller: scroController,
         physics: const NeverScrollableScrollPhysics(),
-        children: <Widget>[widget.child, sb(width: 20), widget.child]);
+        children: [widget.child, sb(width: 20), widget.child]);
   }
 }
 

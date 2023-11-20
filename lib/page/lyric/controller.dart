@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:music/model/lyric_model.dart';
@@ -16,7 +14,8 @@ class LyricController extends GetxController {
   Duration duration = const Duration();
   RxInt lineIndex = 0.obs;
   RxBool playing = false.obs;
-  final lyricController = ScrollController();
+  // final lyricController = ScrollController();
+  final lyricController = PageController(viewportFraction: 0.1);
   RxBool showBotton = true.obs;
 
   _initData() async {
@@ -44,9 +43,12 @@ class LyricController extends GetxController {
     if (lineIndex.value != index) {
       lineIndex.value = index;
       if (lyricController.hasClients) {
-        double nowOffset = lyricController.offset;
-        nowOffset = index * (Platform.isWindows ? 53 : 28);
-        lyricController.animateTo(nowOffset,
+        // double nowOffset = lyricController.offset;
+        // nowOffset = index * (Platform.isWindows ? 53 : 28);
+        // lyricController.animateTo(nowOffset,
+        //     duration: const Duration(milliseconds: 100),
+        //     curve: Curves.bounceIn);
+        lyricController.animateToPage(lineIndex.value,
             duration: const Duration(milliseconds: 100),
             curve: Curves.bounceIn);
       } else {}

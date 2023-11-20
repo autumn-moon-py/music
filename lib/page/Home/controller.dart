@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
@@ -38,7 +38,8 @@ class HomeController extends GetxController {
   }
 
   Future<void> _initData() async {
-    musicList.addAll(await MusicList.getLocelMusicList('netease'));
+    // musicList.addAll(await MusicList.getLocelMusicList('netease'));
+    musicList.addAll(await MusicList.getLocelMusicList('milk'));
     final playable = MusicList.getMediaList(musicList);
     await player.open(playable);
     changePlayIndex(musicList.first.id!);
@@ -73,6 +74,7 @@ class HomeController extends GetxController {
       int playIndex = getSongIndex(playId.value);
       if (playIndex != 0) musicList[playIndex].play = false;
       if (playIndex != 0) debugPrint('暂停$playIndex');
+      // EasyLoading.showToast('错误:$error');
       next();
     });
     player.stream.playing.listen((playing) {
@@ -121,10 +123,6 @@ class HomeController extends GetxController {
     await player.stop();
   }
 
-  Future<void> setPlayMode(PlaylistMode mode) async {
-    await player.setPlaylistMode(mode);
-  }
-
   Future<void> setVolume(double volume) async {
     if (volume > 100 || volume < 0) return;
     await player.setVolume(volume);
@@ -134,10 +132,6 @@ class HomeController extends GetxController {
     final lyricController = Get.find<LyricController>();
     await player.seek(position);
     lyricController.changePosition(position);
-  }
-
-  Future<void> shuffle(bool enable) async {
-    await player.setShuffle(enable);
   }
 
   Future<void> playNext(bool next, [int? id]) async {
@@ -151,10 +145,22 @@ class HomeController extends GetxController {
     debugPrint('暂停$playIndex');
     await pause();
     if (waitPlayId == 0) {
-      if (next) {
-        playIndex += 1;
-      } else {
-        playIndex -= 1;
+      if (playlistMode.value == 1) {
+        playIndex = playIndex;
+      } else if (playlistMode.value == 2) {
+        while (true) {
+          int temp = Random().nextInt(musicList.length - 1);
+          if (temp != playIndex) {
+            playIndex = temp;
+            break;
+          }
+        }
+      } else if (playlistMode.value == 0) {
+        if (next) {
+          playIndex += 1;
+        } else {
+          playIndex -= 1;
+        }
       }
     } else {
       playId.value = waitPlayId;
